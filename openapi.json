@@ -1,17 +1,21 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Abuja Night of Glory 2025 - VIP List API",
-    "description": "Simple, secure VIP name checker + admin panel for Night of Glory 2025",
+    "title": "Abuja Night of Glory 2025 - VIP System API",
+    "description": "Public VIP checker + Application Form + Admin Approval System",
     "version": "1.0.0",
     "contact": {
-      "name": "Night of Glory Team"
+      "name": "Night of Glory Tech Team"
     }
   },
   "servers": [
     {
       "url": "http://localhost:3000",
-      "description": "Local Development"
+      "description": "Backend API (Express)"
+    },
+    {
+      "url": "http://localhost:3000",
+      "description": "Frontend Dev Server (Vite/React)"
     }
   ],
   "components": {
@@ -20,26 +24,58 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT",
-        "description": "Enter your JWT token (from /api/admin/login)"
+        "description": "Enter JWT token from /api/admin/login"
       }
     },
     "schemas": {
       "VIP": {
         "type": "object",
         "properties": {
-          "_id": { "type": "string", "example": "675a8f1c9d8e2f1b3c4d5e6f" },
-          "name": { "type": "string", "example": "Dr. Mrs. Aisha Mohammed" },
+          "_id": { "type": "string" },
+          "name": { "type": "string", "example": "Matthew Ashimolowo" },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ApplicantRequest": {
+        "type": "object",
+        "required": ["firstName", "lastName", "email", "phone", "bio"],
+        "properties": {
+          "firstName": { "type": "string", "example": "Matthew", "minLength": 2 },
+          "lastName": { "type": "string", "example": "Ashimolowo", "minLength": 2 },
+          "email": { "type": "string", "format": "email", "example": "matthew@kicc.org.uk" },
+          "phone": { "type": "string", "example": "08012345678" },
+          "bio": {
+            "type": "string",
+            "minLength": 30,
+            "example": "Senior Pastor of KICC London, GMN Leader for over 20 years. Requesting VIP access for Abuja Night of Glory 2025."
+          }
+        }
+      },
+      "Applicant": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "email": { "type": "string" },
+          "phone": { "type": "string" },
+          "bio": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "approved", "rejected"],
+            "default": "pending"
+          },
+          "appliedAt": { "type": "string", "format": "date-time" }
         }
       },
       "AdminRegister": {
         "type": "object",
         "required": ["name", "email", "password"],
         "properties": {
-          "name": { "type": "string", "example": "Pastor John" },
-          "email": { "type": "string", "format": "email", "example": "admin@nightofglory.com" },
-          "password": { "type": "string", "format": "password", "example": "nightofglory2025" }
+          "name": { "type": "string", "example": "GMN Admin" },
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "format": "password", "minLength": 6 }
         }
       },
       "AdminLogin": {
@@ -67,11 +103,7 @@
         "type": "object",
         "required": ["name"],
         "properties": {
-          "name": {
-            "type": "string",
-            "example": "Senator David Mark",
-            "description": "Full name of the VIP (case-insensitive, duplicate-protected)"
-          }
+          "name": { "type": "string", "example": "David Ibiyeomie" }
         }
       }
     }
@@ -80,42 +112,85 @@
     "/api/vip/search": {
       "get": {
         "summary": "Search VIP by name (Public)",
-        "description": "Anyone can check if their name is on the VIP list. Partial & case-insensitive match.",
         "parameters": [
           {
             "name": "query",
             "in": "query",
             "required": true,
             "schema": { "type": "string", "minLength": 2 },
-            "example": "Aisha",
-            "description": "At least 2 characters of the name"
+            "example": "Matthew"
           }
         ],
         "responses": {
+          "200": { "description": "VIP found or not found" }
+        }
+      }
+    },
+
+    "/api/applicant/apply": {
+      "post": {
+        "summary": "Apply to become a VIP",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ApplicantRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Application submitted successfully" },
+          "400": { "description": "Invalid data or already applied" }
+        }
+      }
+    },
+
+    "/api/applicant/applications": {
+      "get": {
+        "summary": "Get all applications (Admin only)",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
           "200": {
-            "description": "VIP found",
+            "description": "List of all pending/processed applications",
             "content": {
               "application/json": {
-                "example": {
-                  "found": true,
-                  "vip": {
-                    "_id": "675a8f1c9d8e2f1b3c4d5e6f",
-                    "name": "Dr. Aisha Bello",
-                    "createdAt": "2025-11-30T10:00:00.000Z"
-                  }
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Applicant" }
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not on VIP list",
-            "content": {
-              "application/json": {
-                "example": { "found": false, "message": "Oops! You are not on the VIP list..." }
-              }
-            }
-          },
-          "400": { "description": "Query too short" }
+          }
+        }
+      }
+    },
+
+    "/api/applicant/applications/{id}/approve": {
+      "post": {
+        "summary": "Approve application → Add to VIP list as 'First Last'",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Approved & added to VIP list" },
+          "400": { "description": "Already processed or already VIP" },
+          "404": { "description": "Application not found" }
+        }
+      }
+    },
+
+    "/api/applicant/applications/{id}/reject": {
+      "post": {
+        "summary": "Reject application",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Application rejected" },
+          "400": { "description": "Already processed" },
+          "404": { "description": "Not found" }
         }
       }
     },
@@ -132,8 +207,7 @@
           }
         },
         "responses": {
-          "201": { "description": "Admin created successfully" },
-          "400": { "description": "Admin already exists or invalid data" }
+          "201": { "description": "Admin created" }
         }
       }
     },
@@ -157,19 +231,18 @@
                 "schema": { "$ref": "#/components/schemas/AuthResponse" }
               }
             }
-          },
-          "401": { "description": "Invalid credentials" }
+          }
         }
       }
     },
 
     "/api/admin/vips": {
       "get": {
-        "summary": "Get all VIPs",
+        "summary": "Get all approved VIPs (manual + approved applicants)",
         "security": [{ "BearerAuth": [] }],
         "responses": {
           "200": {
-            "description": "List of all VIP names",
+            "description": "Complete VIP list",
             "content": {
               "application/json": {
                 "schema": {
@@ -182,7 +255,7 @@
         }
       },
       "post": {
-        "summary": "Add a new VIP (only full name)",
+        "summary": "Manually add VIP",
         "security": [{ "BearerAuth": [] }],
         "requestBody": {
           "required": true,
@@ -193,29 +266,20 @@
           }
         },
         "responses": {
-          "201": { "description": "VIP added successfully" },
-          "400": { "description": "Name already exists or too short" },
-          "401": { "description": "Unauthorized" }
+          "201": { "description": "VIP added" }
         }
       }
     },
 
     "/api/admin/vips/{id}": {
       "delete": {
-        "summary": "Remove VIP by ID",
+        "summary": "Remove VIP",
         "security": [{ "BearerAuth": [] }],
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
-          "200": { "description": "VIP removed" },
-          "404": { "description": "VIP not found" },
-          "401": { "description": "Unauthorized" }
+          "200": { "description": "VIP removed" }
         }
       }
     }

@@ -44,6 +44,7 @@ mongoose
 // API Routes
 app.use('/api/vip', require('./routes/vip'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/applicant', require('./routes/applicant'));
 
 // Catch-all 404 for any undefined API routes (CORRECT WAY)
 app.use((req, res, next) => {
