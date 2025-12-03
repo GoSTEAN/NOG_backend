@@ -41,6 +41,7 @@ mongoose
     process.exit(1);
   });
 
+  
 // API Routes
 app.use('/api/vip', require('./routes/vip'));
 app.use('/api/admin', require('./routes/admin'));
