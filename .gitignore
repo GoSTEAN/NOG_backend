@@ -1,0 +1,14 @@
+node_modules/
+.env
+.DS_Store
+npm-debug.log
+dist/
+/.vscode/
+/.idea/
+coverage/
+logs/
+*.log
+/.nyc_output/
+/.env.local
+/.env.*.local
+package-lock.json
