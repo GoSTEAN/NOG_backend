@@ -2,16 +2,16 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Abuja Night of Glory 2025 - VIP System API",
-    "description": "Public VIP checker + Application Form + Admin Approval System",
+    "description": "Public VIP name checker, VIP application form, admin approval/rejection system with email notifications",
     "version": "1.0.0",
     "contact": {
-      "name": "Night of Glory Tech Team"
+      "name": "Night of Glory TechWalk Team"
     }
   },
   "servers": [
     {
       "url": "http://localhost:3000",
-      "description": "Backend API (Express)"
+      "description": "Backend API (Express Server)"
     },
     {
       "url": "http://localhost:3000",
@@ -24,7 +24,7 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT",
-        "description": "Enter JWT token from /api/admin/login"
+        "description": "JWT token obtained from /api/admin/login"
       }
     },
     "schemas": {
@@ -122,14 +122,14 @@
           }
         ],
         "responses": {
-          "200": { "description": "VIP found or not found" }
+          "200": { "description": "Returns whether the name is on the VIP list or not" }
         }
       }
     },
 
     "/api/applicant/apply": {
       "post": {
-        "summary": "Apply to become a VIP",
+        "summary": "Submit VIP Application (Public)",
         "requestBody": {
           "required": true,
           "content": {
@@ -147,11 +147,11 @@
 
     "/api/applicant/applications": {
       "get": {
-        "summary": "Get all applications (Admin only)",
+        "summary": "Get all VIP applications (Admin only)",
         "security": [{ "BearerAuth": [] }],
         "responses": {
           "200": {
-            "description": "List of all pending/processed applications",
+            "description": "List of all applications (pending, approved, rejected)",
             "content": {
               "application/json": {
                 "schema": {
@@ -167,14 +167,14 @@
 
     "/api/applicant/applications/{id}/approve": {
       "post": {
-        "summary": "Approve application → Add to VIP list as 'First Last'",
+        "summary": "Approve application → Add to VIP list + Send email",
         "security": [{ "BearerAuth": [] }],
         "parameters": [
           { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
-          "200": { "description": "Approved & added to VIP list" },
-          "400": { "description": "Already processed or already VIP" },
+          "200": { "description": "Approved, added to VIP list, and approval email sent" },
+          "400": { "description": "Already processed or name already in VIP list" },
           "404": { "description": "Application not found" }
         }
       }
@@ -182,15 +182,34 @@
 
     "/api/applicant/applications/{id}/reject": {
       "post": {
-        "summary": "Reject application",
+        "summary": "Reject application + Send rejection email",
         "security": [{ "BearerAuth": [] }],
         "parameters": [
           { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
-          "200": { "description": "Application rejected" },
+          "200": { "description": "Application rejected and email sent" },
           "400": { "description": "Already processed" },
-          "404": { "description": "Not found" }
+          "404": { "description": "Application not found" }
+        }
+      }
+    },
+
+    "/api/admin/applications/{id}": {
+      "delete": {
+        "summary": "Delete an application (Admin only)",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Application deleted successfully" },
+          "404": { "description": "Application not found" }
         }
       }
     },
@@ -207,7 +226,8 @@
           }
         },
         "responses": {
-          "201": { "description": "Admin created" }
+          "201": { "description": "Admin created successfully" },
+          "400": { "description": "Admin already exists" }
         }
       }
     },
@@ -231,14 +251,15 @@
                 "schema": { "$ref": "#/components/schemas/AuthResponse" }
               }
             }
-          }
+          },
+          "401": { "description": "Invalid credentials" }
         }
       }
     },
 
     "/api/admin/vips": {
       "get": {
-        "summary": "Get all approved VIPs (manual + approved applicants)",
+        "summary": "Get all VIPs (manually added + approved applicants)",
         "security": [{ "BearerAuth": [] }],
         "responses": {
           "200": {
@@ -255,7 +276,7 @@
         }
       },
       "post": {
-        "summary": "Manually add VIP",
+        "summary": "Manually add a VIP",
         "security": [{ "BearerAuth": [] }],
         "requestBody": {
           "required": true,
@@ -266,20 +287,22 @@
           }
         },
         "responses": {
-          "201": { "description": "VIP added" }
+          "201": { "description": "VIP added successfully" },
+          "400": { "description": "Name already exists or invalid" }
         }
       }
     },
 
     "/api/admin/vips/{id}": {
       "delete": {
-        "summary": "Remove VIP",
+        "summary": "Remove a VIP from the list",
         "security": [{ "BearerAuth": [] }],
         "parameters": [
           { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
-          "200": { "description": "VIP removed" }
+          "200": { "description": "VIP removed successfully" },
+          "404": { "description": "VIP not found" }
         }
       }
     }
