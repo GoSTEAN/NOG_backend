@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const Admin = require('../models/Admin');
 const VIP = require('../models/VIP');
 const { protect } = require('../middleware/auth');
+const Applicant = require('../models/Applicant');
 
 // Register Admin (run once)
 router.post('/register', async (req, res) => {
@@ -86,6 +87,36 @@ router.delete('/vips/:id', protect, async (req, res) => {
     await VIP.findByIdAndDelete(req.params.id);
     res.json({ message: "VIP removed successfully" });
   } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.delete('/applications/:id', protect, async (req, res) => {
+  try {
+    const applicant = await Applicant.findById(req.params.id);
+    if (!applicant) {
+      return res.status(404).json({ message: "Application not found" });
+    }
+
+    // If it was already approved, optionally remove from VIP list too?
+    // Uncomment the block below if you want auto-remove from VIP when deleting approved application
+    /*
+    if (applicant.status === 'approved') {
+      const fullName = `${applicant.firstName} ${applicant.lastName}`;
+      await VIP.findOneAndDelete({ 
+        name: { $regex: `^${fullName}$`, $options: 'i' } 
+      });
+    }
+    */
+
+    await Applicant.findByIdAndDelete(req.params.id);
+
+    res.json({ 
+      message: "Application deleted successfully",
+      deletedApplicant: applicant 
+    });
+  } catch (err) {
+    console.error("Delete application error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
