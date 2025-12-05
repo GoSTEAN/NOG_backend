@@ -10,7 +10,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:3000",
+      "url": "https://nogbackend-production.up.railway.app",
       "description": "Backend API (Express Server)"
     },
     {
